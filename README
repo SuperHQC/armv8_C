@@ -1,0 +1,15 @@
+## This is armv8 simulator for fact.s
+
+### This simulator only has necessary instructions to run fact.s
+
+
+How to use:
+
+Type in command line:
+(run only)
+            make armv8
+            make run
+
+(print step)
+            make armv8p
+            make run
