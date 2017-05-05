@@ -1,6 +1,6 @@
-## This is armv8 simulator for fact.s
+##This is armv8 simulator for fact.s
 
-### This simulator only has necessary instructions to run fact.s
+###This simulator only has necessary instructions to run fact.s
 
 
 How to use:
