@@ -85,6 +85,10 @@ int PC;
 int lines=0;
 int temp;
 //functions
+
+/*
+*    Read file function
+*/
 void readFile(FILE * fp){
   char c;
   char word[255];
@@ -92,13 +96,12 @@ void readFile(FILE * fp){
   int vi=0;
   while((c = fgetc(fp)) != EOF){
     if((c<32 ||c>=127)&&c!='\n'){
-      c=fgetc(fp);
+      c=fgetc(fp);  //read file char by char
     }
-    // printf("%d%c\n",c,c);
-    if(c==','){
+    if(c==','){ //change ',' to ' '
       c=' ';
     }
-    if(c == '@'){
+    if(c == '@'){ //deal with comment and store them in comment field of codes
       while(c != '\n'){
         // printf("%c\n",c );
         word[n]=c;
@@ -109,7 +112,7 @@ void readFile(FILE * fp){
       n=0;
       strcpy(codes[lines].comment,word);
     }
-    else if(c == '['){
+    else if(c == '['){  //deal with shifter
       while(c != ']'){
         c=toupper(c);
         word[n]=c;
@@ -121,7 +124,7 @@ void readFile(FILE * fp){
       c = fgetc(fp);
       word[n]='\0';
     }
-    if(c == ' '){
+    if(c == ' '){ //seperate codes by ' ' and store them in different fields
       word[n]='\0';
       if(strncmp(word,"\0",1)!=0){
 
@@ -141,12 +144,12 @@ void readFile(FILE * fp){
     }
     n=0;
   }
-    else if(c == ':'){
+    else if(c == ':'){  //labels
       word[n]='\0';
       n=0;
       strcpy(codes[lines].label,word);
     }
-    else if(c == '\n'){
+    else if(c == '\n'){ //new lines
       word[n]='\0';
       if(strncmp(word,"\0",1)!=0){
         //  printf("%s\n",word );
@@ -162,13 +165,13 @@ void readFile(FILE * fp){
         else if(vi ==3){
           strcpy(codes[lines].v3,word);
         }
-        // printf("%d %s\n",vi,word );
+
       }
       n=0;
       lines++;
       vi=0;
     }
-    else{
+    else{ //build words
       c=toupper(c);
       word[n]=c;
       n++;
@@ -176,12 +179,12 @@ void readFile(FILE * fp){
   }
 }
 
-void mov(struct instruction ins){
-  int *dst;
+void mov(struct instruction ins){ //mov instruction
+  int *dst;//destination pointer
   int value=0;
   char buff[32];
   int i;
-  if(ins.v1[0]=='R'){
+  if(ins.v1[0]=='R'){   //read first variable and translate
     for(i=0; i<strlen(ins.v1)-1; i++){
       buff[i]=ins.v1[i+1];
     }
@@ -190,6 +193,7 @@ void mov(struct instruction ins){
     for(int i=0;i<32;i++){
       if(registers[i].name==atol(buff)){
         dst=&(registers[i].value);
+        PC=PC+4;
       }
     }
   }
@@ -197,7 +201,7 @@ void mov(struct instruction ins){
     dst=&PC;
   }
 
-  if(ins.v2[0]!='#'){
+  if(ins.v2[0]!='#'){ //read second variable and translate
     if(ins.v2[0]=='R'){
       for(i=0; i<strlen(ins.v2)-1; i++){
         buff[i]=ins.v2[i+1];
@@ -224,15 +228,14 @@ void mov(struct instruction ins){
   }
 
   *dst=value;
-  PC=PC+4;
 }
 
-void cmp(struct instruction ins){
+void cmp(struct instruction ins){ //compare two variables and setup flags
   int v1;
   int v2;
   int i;
   char buff[32];
-  if(ins.v1[0]!='#'){
+  if(ins.v1[0]!='#'){//read first variable and
     if(ins.v1[0]=='R'){
       for(i=0; i<strlen(ins.v1)-1; i++){
         buff[i]=ins.v1[i+1];
@@ -255,7 +258,7 @@ void cmp(struct instruction ins){
     v1 = atol(buff);
   }
 
-  if(ins.v2[0]!='#'){
+  if(ins.v2[0]!='#'){ //read second variable
     if(ins.v2[0]=='R'){
       for(i=0; i<strlen(ins.v2)-1; i++){
         buff[i]=ins.v2[i+1];
@@ -269,7 +272,7 @@ void cmp(struct instruction ins){
       }
     }
   }
-  else{
+  else{//if the variable is immediate
     for(i=0; i<strlen(ins.v2)-1; i++){
       buff[i]=ins.v2[i+1];
     }
@@ -293,7 +296,7 @@ void cmp(struct instruction ins){
   PC=PC+4;
 }
 
-void b(struct instruction ins){
+void b(struct instruction ins){ //branch to the address
   for(int i=0;i<lines;i++){
     if(strncmp(codes[i].label,ins.v1,16)==0){
       PC=codes[i].addr;
@@ -301,12 +304,12 @@ void b(struct instruction ins){
   }
 }
 
-void bl(struct instruction ins){
-  registers[30].value = ins.addr;
+void bl(struct instruction ins){  //branch to the address
+  registers[30].value = ins.addr+4; //store the next pc value tu r30
   b(ins);
 }
 
-void b_ge(struct instruction ins){
+void b_ge(struct instruction ins){//branch when grate or equal
   if(Z==1 || (N==0 && Z==0)){
     b(ins);
   }
@@ -315,7 +318,7 @@ void b_ge(struct instruction ins){
   }
 }
 
-void sub(struct instruction ins){
+void sub(struct instruction ins){ //substract two variables store result to v1
   int *dst;
   int v1=0;
   int v2=0;
@@ -337,7 +340,7 @@ void sub(struct instruction ins){
     dst=&(registers[28].value);
   }
 
-  if(ins.v2[0]!='#'){
+  if(ins.v2[0]!='#'){//read first variable
     if(ins.v2[0]=='R'){
       for(i=0; i<strlen(ins.v2)-1; i++){
         buff[i]=ins.v2[i+1];
@@ -363,7 +366,7 @@ void sub(struct instruction ins){
     v1 = atol(buff);
   }
 
-  if(ins.v3[0]!='#'){
+  if(ins.v3[0]!='#'){ //read second variable
     if(ins.v3[0]=='R'){
       for(i=0; i<strlen(ins.v3)-1; i++){
         buff[i]=ins.v3[i+1];
@@ -393,13 +396,13 @@ void sub(struct instruction ins){
   PC=PC+4;
 }
 
-void add(struct instruction ins){
+void add(struct instruction ins){ //add two variables
   int *dst;
   int v1=0;
   int v2=0;
   char buff[32];
   int i;
-  if(ins.v1[0]=='R'){
+  if(ins.v1[0]=='R'){ //read the dst
     for(i=0; i<strlen(ins.v1)-1; i++){
       buff[i]=ins.v1[i+1];
     }
@@ -415,7 +418,7 @@ void add(struct instruction ins){
     dst=&(registers[28].value);
   }
 
-  if(ins.v2[0]!='#'){
+  if(ins.v2[0]!='#'){ //read first variable
     if(ins.v2[0]=='R'){
       for(i=0; i<strlen(ins.v2)-1; i++){
         buff[i]=ins.v2[i+1];
@@ -441,7 +444,7 @@ void add(struct instruction ins){
     v1 = atol(buff);
   }
 
-  if(ins.v3[0]!='#'){
+  if(ins.v3[0]!='#'){ //read second variable
     if(ins.v3[0]=='R'){
       for(i=0; i<strlen(ins.v3)-1; i++){
         buff[i]=ins.v3[i+1];
@@ -471,13 +474,13 @@ void add(struct instruction ins){
   PC=PC+4;
 }
 
-void mul(struct instruction ins){
+void mul(struct instruction ins){ //multiply
   int *dst;
   int v1=0;
   int v2=0;
   char buff[32];
   int i;
-  if(ins.v1[0]=='R'){
+  if(ins.v1[0]=='R'){ //read dst
     for(i=0; i<strlen(ins.v1)-1; i++){
       buff[i]=ins.v1[i+1];
     }
@@ -493,7 +496,7 @@ void mul(struct instruction ins){
     dst=&(registers[28].value);
   }
 
-  if(ins.v2[0]!='#'){
+  if(ins.v2[0]!='#'){ //read first var
     if(ins.v2[0]=='R'){
       for(i=0; i<strlen(ins.v2)-1; i++){
         buff[i]=ins.v2[i+1];
@@ -519,7 +522,7 @@ void mul(struct instruction ins){
     v1 = atol(buff);
   }
 
-  if(ins.v3[0]!='#'){
+  if(ins.v3[0]!='#'){ //read second var
     if(ins.v3[0]=='R'){
       for(i=0; i<strlen(ins.v3)-1; i++){
         buff[i]=ins.v3[i+1];
@@ -549,14 +552,14 @@ void mul(struct instruction ins){
   PC=PC+4;
 }
 
-void str(struct instruction ins){
+void str(struct instruction ins){ //store to register
   int *dst;
   int *src;
   int shift;
 
   int i;
   char buff[32];
-  if(ins.v1[0]=='R'){
+  if(ins.v1[0]=='R'){ //read src address
     for(i=0; i<strlen(ins.v1)-1; i++){
       buff[i]=ins.v1[i+1];
     }
@@ -575,7 +578,7 @@ void str(struct instruction ins){
   }
   i=0;
 
-  if(ins.v2[0]=='['){
+  if(ins.v2[0]=='['){ //deal with address shift
 
     while(ins.v2[i+1]!=','){
 
@@ -615,7 +618,7 @@ void str(struct instruction ins){
     i=0;
 
     //#
-    if(buff[0]!='#'){
+    if(buff[0]!='#'){ //calculate the value in []
       if(buff[0]=='R'){
         for(i=0; i<strlen(buff)-1; i++){
           buff[i]=buff[i+1];
@@ -645,6 +648,8 @@ void str(struct instruction ins){
 
   int temp;
   temp=*dst+shift;
+
+  //store value in little endian
   for(int i=0;i<8000;i++){
     if(stack[i].addr==temp){
       stack[i].value=((char *)src)[0];
@@ -656,7 +661,7 @@ void str(struct instruction ins){
   PC=PC+4;
 }
 
-void ldr(struct instruction ins){
+void ldr(struct instruction ins){ //load value from address to register
   int *dst;
   int *src;
   int shift;
@@ -757,7 +762,7 @@ void ldr(struct instruction ins){
   PC=PC+4;
 }
 
-void swi(struct instruction ins){
+void swi(struct instruction ins){ //function call
   if(strncmp(ins.v1,"0X6B",32)==0){
     printf("%d\n",registers[registers[0].value].value );
     PC=PC+4;
@@ -767,7 +772,7 @@ void swi(struct instruction ins){
   }
 }
 
-void execute(struct instruction ins){
+void execute(struct instruction ins){ //execute instruction
   if(strncmp(ins.op,"MOV",5)==0){
     mov(ins);
   }
@@ -805,11 +810,11 @@ void execute(struct instruction ins){
 
 
 //print
-void printIns(int index){
+void printIns(int index){ //print single instruction
   printf("%08x\t%s\t%s\t\t%s\t\t%s\t\t%s\t%s\n",codes[temp].addr ,codes[temp].label,codes[temp].op, codes[temp].v1,codes[temp].v2, codes[temp].v3,codes[temp].comment);
 }
 
-void printReg(){
+void printReg(){  //print registers
   for(int i=0; i<4; i++){
     for(int j=0; j<8;j++){
       if(i*8+j==28 || i*8+j==30){
@@ -823,7 +828,7 @@ void printReg(){
   }
 }
 
-void printStack(){
+void printStack(){  //print stack
   for (size_t i = 0; i < 40; i++) {
     if(stack[i].addr>=registers[28].value)
     printf("%08x\t%02x\n", stack[i].addr,stack[i].value);
@@ -831,6 +836,9 @@ void printStack(){
 }
 
 //init
+//initiate enviroment, reset registers to 0;
+//stack size 8000 bytes
+//maximum code length 1000 lines
 void init(){
   registers=(struct Reg *)malloc(32*sizeof(struct Reg));
   stack = (struct Mem *)malloc(8000*sizeof(struct Mem));
@@ -859,6 +867,12 @@ int main(int argc, char *argv[]){
 
   readFile(fp);
   fclose(fp);
+#ifdef P
+  for(int x=0; x< lines; x++){
+    printf("%08x\t%s\t%s\t\t%s\t\t%s\t\t%s\t%s\n",codes[x].addr ,codes[x].label,codes[x].op, codes[x].v1,codes[x].v2, codes[x].v3,codes[x].comment);
+  }
+#endif
+
   char input[255];
   while(PC<0x4000+4*lines){
     for(int i=0;i<1000;i++){
@@ -890,77 +904,3 @@ int main(int argc, char *argv[]){
   return 0;
 
 }
-
-
-
-// mov(codes[1]);
-// bl(codes[2]);
-// sub(codes[6]);
-// str(codes[7]);
-// str(codes[8]);
-// cmp(codes[9]);
-// b_ge(codes[10]);
-// sub(codes[14]);
-// bl(codes[15]);
-// sub(codes[6]);
-// str(codes[7]);
-// str(codes[8]);
-// cmp(codes[9]);
-// b_ge(codes[10]);
-// sub(codes[14]);
-// bl(codes[15]);
-// sub(codes[6]);
-// str(codes[7]);
-// str(codes[8]);
-// cmp(codes[9]);
-// b_ge(codes[10]);
-// sub(codes[14]);
-// bl(codes[15]);
-// sub(codes[6]);
-// str(codes[7]);
-// str(codes[8]);
-// cmp(codes[9]);
-// b_ge(codes[10]);
-// sub(codes[14]);
-// bl(codes[15]);
-// sub(codes[6]);
-// str(codes[7]);
-// str(codes[8]);
-// cmp(codes[9]);
-// b_ge(codes[10]);
-// mov(codes[11]);
-// add(codes[12]);
-// printf("%x\n", PC);
-// mov(codes[13]);
-// printf("%x\n", PC);
-// mov(codes[16]);
-// ldr(codes[17]);
-// ldr(codes[18]);
-// add(codes[19]);
-// mul(codes[20]);
-// mov(codes[21]);
-// printf("%x\n", PC);
-// mov(codes[16]);
-// ldr(codes[17]);
-// ldr(codes[18]);
-// add(codes[19]);
-// mul(codes[20]);
-// mov(codes[21]);
-// printf("%x\n", PC);
-// mov(codes[16]);
-// ldr(codes[17]);
-// ldr(codes[18]);
-// add(codes[19]);
-// mul(codes[20]);
-// mov(codes[21]);
-// printf("%x\n", PC);
-// mov(codes[16]);
-// ldr(codes[17]);
-// ldr(codes[18]);
-// add(codes[19]);
-// mul(codes[20]);
-// mov(codes[21]);
-// printf("%x\n", PC);
-// mov(codes[3]);
-// swi(codes[4]);
-// swi(codes[5]);

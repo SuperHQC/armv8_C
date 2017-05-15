@@ -1,6 +1,5 @@
 CC = gcc
 
-
 all:	armv8
 
 armv8:	armv8_c.c
